@@ -1,3 +1,10 @@
 <resources>
-    <string name="app_name">SwPersona</string>
+  <string name="app_name">SwPersona</string>
+  <string name="title_activity_main">MainActivity</string>
+  <string name="action_search">Search</string>
+
+  <!-- TODO: Remove or change this placeholder text -->
+  <string name="hello_blank_fragment">Hello blank fragment</string>
+  <string name="no_history_label">No history yet</string>
+  <string name="no_matches_label">No matches</string>
 </resources>
