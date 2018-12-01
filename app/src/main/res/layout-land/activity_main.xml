@@ -21,7 +21,6 @@
       xmlns:tools="http://schemas.android.com/tools"
       xmlns:app="http://schemas.android.com/apk/res-auto"
       android:id="@+id/content_frame"
-      android:name="net.dimanss47.swpersona.HistoryFragment"
       android:layout_width="match_parent"
       android:layout_height="match_parent"
       android:orientation="horizontal"
@@ -30,6 +29,10 @@
     <FrameLayout android:id="@+id/left_pane"
         android:layout_width="@dimen/landscape_left_pane_width"
         android:layout_height="match_parent"/>
+    <View
+        android:layout_width="@dimen/landscape_splitter_bar_width"
+        android:layout_height="match_parent"
+        android:background="#bbbbbb"/>
     <fragment android:name="net.dimanss47.swpersona.DetailsFragment"
         android:id="@+id/right_pane"
         android:layout_width="match_parent"

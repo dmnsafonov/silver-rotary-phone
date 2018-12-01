@@ -20,23 +20,15 @@ data class PersonList(
     val results: ArrayList<Person>
 )
 
-interface SwApiBase {
-    fun getPeopleListRaw(searchTerm: String, page: Int): Single<PersonList>
-    fun getPerson(id: Int): Single<PersonDetails>
-
-    fun getPeopleList(searchTerm: String): DataSource.Factory<Int, Person> =
-        SwApiPersonListDataSourceFactory { page -> getPeopleListRaw(searchTerm, page) }
-}
-
-interface SwApi : SwApiBase {
-    @GET("/people/")
-    override fun getPeopleListRaw(
-        @Query("searchTerm") searchTerm: String,
+interface SwApi {
+    @GET("people/")
+    fun getPeopleListRaw(
+        @Query("search") searchTerm: String,
         @Query("page") page: Int
     ): Single<PersonList>
 
-    @GET("/people/{id}")
-    override fun getPerson(@Path("id") id: Int): Single<PersonDetails>
+    @GET("people/{id}")
+    fun getPerson(@Path("id") id: Int): Single<PersonDetails>
 
     companion object {
         fun create(): SwApi {
@@ -49,6 +41,9 @@ interface SwApi : SwApiBase {
         }
     }
 }
+
+fun SwApi.getPeopleList(searchTerm: String): DataSource.Factory<Int, Person> =
+    SwApiPersonListDataSourceFactory { page -> getPeopleListRaw(searchTerm, page) }
 
 class SwApiPersonListDataSourceFactory(
     private val querier: (page: Int) -> Single<PersonList>
@@ -65,7 +60,7 @@ class SwApiPersonListDataSource(
         params: LoadInitialParams<Int>,
         callback: LoadInitialCallback<Int, Person>
     ) {
-        querier(params.requestedLoadSize).subscribeBy(
+        querier(1).subscribeBy(
             onError = {
                 TODO()
             },
@@ -86,13 +81,7 @@ class SwApiPersonListDataSource(
         params: LoadParams<Int>,
         callback: LoadCallback<Int, Person>
     ) {
-        if(params.key == 1) {
-            return callback.onResult(ArrayList(0), null)
-        }
-
-        val key = params.key - 1
-
-        querier(key).subscribeBy(
+        querier(params.key).subscribeBy(
             onError = {
                 TODO()
             },
@@ -107,7 +96,7 @@ class SwApiPersonListDataSource(
         params: LoadParams<Int>,
         callback: LoadCallback<Int, Person>
     ) {
-        querier(params.key + 1).subscribeBy(
+        querier(params.key).subscribeBy(
             onError = {
                 TODO()
             },

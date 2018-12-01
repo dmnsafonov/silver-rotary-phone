@@ -2,6 +2,7 @@ package net.dimanss47.swpersona
 
 import androidx.paging.DataSource
 import com.google.gson.JsonElement
+import com.google.gson.annotations.SerializedName
 import io.reactivex.Observable
 
 
@@ -10,7 +11,7 @@ typealias PersonDetails = Map<String, JsonElement>
 data class Person(
     val name: String,
     val gender: String,
-    val birthYear: String,
+    @SerializedName("birth_year") val birthYear: String,
     val url: String
 )
 

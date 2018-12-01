@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <dimen name="landscape_left_pane_width">200dp</dimen>
+  <dimen name="small_text_size">12sp</dimen>
+  <dimen name="search_list_card_corners">5dp</dimen>
+  <dimen name="search_list_card_content_padding">5dp</dimen>
+  <dimen name="landscape_splitter_bar_width">1dp</dimen>
+  <dimen name="landscape_splitter_bar_elevation">4dp</dimen>
 </resources>
