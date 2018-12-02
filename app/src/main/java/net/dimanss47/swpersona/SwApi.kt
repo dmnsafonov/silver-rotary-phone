@@ -61,9 +61,7 @@ class SwApiPersonListDataSource(
         callback: LoadInitialCallback<Int, Person>
     ) {
         querier(1).subscribeBy(
-            onError = {
-                TODO()
-            },
+            onError = this::forwardNetworkError,
             onSuccess = { list ->
                 callback.onResult(
                     list.results,
@@ -82,9 +80,7 @@ class SwApiPersonListDataSource(
         callback: LoadCallback<Int, Person>
     ) {
         querier(params.key).subscribeBy(
-            onError = {
-                TODO()
-            },
+            onError = this::forwardNetworkError,
             onSuccess = { list ->
                 callback.onResult(list.results, getPageFromURL(list.previous))
             }
@@ -97,14 +93,14 @@ class SwApiPersonListDataSource(
         callback: LoadCallback<Int, Person>
     ) {
         querier(params.key).subscribeBy(
-            onError = {
-                TODO()
-            },
+            onError = this::forwardNetworkError,
             onSuccess = { list ->
                 callback.onResult(list.results, getPageFromURL(list.next))
             }
         )
     }
+
+    private fun forwardNetworkError(e: Throwable) = NetworkErrorChannel.get().onNext(e)
 
     private fun getPageFromURL(urlString: String?): Int? {
         if(urlString == null) return null
@@ -120,3 +116,4 @@ class SwApiPersonListDataSource(
         return pageStr?.toIntOrNull()
     }
 }
+

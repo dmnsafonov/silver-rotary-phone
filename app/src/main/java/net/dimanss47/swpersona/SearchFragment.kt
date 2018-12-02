@@ -17,6 +17,7 @@ import androidx.paging.RxPagedListBuilder
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.snackbar.Snackbar
 import io.reactivex.Observable
 import io.reactivex.disposables.Disposable
 import io.reactivex.observers.DisposableObserver
@@ -28,6 +29,8 @@ import kotlinx.android.synthetic.main.fragment_search.*
 class SearchFragment : Fragment() {
     private lateinit var viewModel: SearchViewModel
     private lateinit var searchAdapterSubscription: Disposable
+    private var networkErrorSubscription: Disposable? = null
+    private var snackbar: Snackbar? = null
 
     private val activity: MainActivity?
         get() = super.getActivity() as? MainActivity
@@ -49,9 +52,7 @@ class SearchFragment : Fragment() {
 
         val newAdapter = SearchListAdapter()
         searchAdapterSubscription = viewModel.personList.subscribeBy(
-            onError = {
-                TODO()
-            },
+            onError = NetworkErrorChannel.get()::onNext,
             onNext = newAdapter::submitList
         )
 
@@ -63,6 +64,7 @@ class SearchFragment : Fragment() {
 
     override fun onStart() {
         super.onStart()
+
         activity!!.searchView.value.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextChange(newText: String): Boolean {
                 viewModel.personNameFilter = newText
@@ -71,16 +73,43 @@ class SearchFragment : Fragment() {
 
             override fun onQueryTextSubmit(query: String): Boolean = true
         })
+
+        if(networkErrorSubscription == null) {
+            networkErrorSubscription = NetworkErrorChannel.get().subscribe { error ->
+                viewModel.onNetworkError(error)
+                makeErrorSnackbar()
+            }
+        }
+
+        if(viewModel.isInErrorState) makeErrorSnackbar()
     }
 
     override fun onStop() {
         super.onStop()
+
         activity!!.searchView.value.setOnQueryTextListener(null)
+
+        snackbar?.dismiss()
+        snackbar = null
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+
+        networkErrorSubscription?.dispose()
+        networkErrorSubscription = null
+
         searchAdapterSubscription.dispose()
+    }
+
+    private fun makeErrorSnackbar() {
+        val sb = Snackbar.make(this.view!!, R.string.network_error_message, Snackbar.LENGTH_INDEFINITE)
+        sb.setAction(R.string.retry_on_network_error_action_label) {
+            viewModel.onNetworkErrorResolved()
+            sb.dismiss()
+        }
+        sb.show()
+        snackbar = sb
     }
 
     private inner class SearchListAdapter : PagedListAdapter<Person, SearchListViewHolder>(SearchListDiffCallbacks) {
@@ -129,9 +158,7 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
     var personNameFilter: String = ""
         set(value) {
             field = value
-            personListRawSubscription.dispose()
-            personListRaw = makePersonList()
-            personListRawSubscription = makePersonListSubscription()
+            reset()
         }
 
     private var personListRaw = makePersonList()
@@ -139,6 +166,12 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
     private var personListRawSubscription: Disposable = makePersonListSubscription()
 
     val personList: Observable<PagedList<Person>> = personListImpl
+
+    private fun reset() {
+        personListRawSubscription.dispose()
+        personListRaw = makePersonList()
+        personListRawSubscription = makePersonListSubscription()
+    }
 
     private fun makePersonList(): Observable<PagedList<Person>> =
         RxPagedListBuilder(PeopleRepository.getPeopleList(personNameFilter), PEOPLE_ON_PAGE)
@@ -151,6 +184,18 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
             override fun onNext(t: PagedList<Person>) = personListImpl.onNext(t)
         }
     )
+
+    var isInErrorState: Boolean = false
+        private set
+
+    fun onNetworkError(e: Throwable) {
+        isInErrorState = true
+    }
+
+    fun onNetworkErrorResolved() {
+        isInErrorState = false
+        reset()
+    }
 
     companion object {
         private const val PEOPLE_ON_PAGE: Int = 10
