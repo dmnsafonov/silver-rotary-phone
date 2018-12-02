@@ -10,8 +10,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
-import java.net.MalformedURLException
-import java.net.URL
+import retrofit2.http.Url
 
 data class PersonList(
     val count: Int,
@@ -22,10 +21,10 @@ data class PersonList(
 
 interface SwApi {
     @GET("people/")
-    fun getPeopleListRaw(
-        @Query("search") searchTerm: String,
-        @Query("page") page: Int
-    ): Single<PersonList>
+    fun getPeopleListRaw(@Query("search") searchTerm: String): Single<PersonList>
+
+    @GET
+    fun getPeopleListPage(@Url pageUrl: String): Single<PersonList>
 
     @GET("people/{id}")
     fun getPerson(@Path("id") id: Int): Single<PersonDetails>
@@ -42,33 +41,39 @@ interface SwApi {
     }
 }
 
-fun SwApi.getPeopleList(searchTerm: String): DataSource.Factory<Int, Person> =
-    SwApiPersonListDataSourceFactory { page -> getPeopleListRaw(searchTerm, page) }
+fun SwApi.getPeopleList(searchTerm: String): DataSource.Factory<String?, Person> =
+    SwApiPersonListDataSourceFactory { page ->
+        if(page == null) {
+            getPeopleListRaw(searchTerm)
+        } else {
+            getPeopleListPage(page)
+        }
+    }
 
 class SwApiPersonListDataSourceFactory(
-    private val querier: (page: Int) -> Single<PersonList>
-) : DataSource.Factory<Int, Person>() {
-    override fun create(): DataSource<Int, Person> =
+    private val querier: (page: String?) -> Single<PersonList>
+) : DataSource.Factory<String?, Person>() {
+    override fun create(): DataSource<String?, Person> =
         SwApiPersonListDataSource(querier)
 }
 
 class SwApiPersonListDataSource(
-    private val querier: (page: Int) -> Single<PersonList>
-) : PageKeyedDataSource<Int, Person>() {
+    private val querier: (page: String?) -> Single<PersonList>
+) : PageKeyedDataSource<String?, Person>() {
     @SuppressLint("CheckResult")
     override fun loadInitial(
-        params: LoadInitialParams<Int>,
-        callback: LoadInitialCallback<Int, Person>
+        params: LoadInitialParams<String?>,
+        callback: LoadInitialCallback<String?, Person>
     ) {
-        querier(1).subscribeBy(
+        querier(null).subscribeBy(
             onError = this::forwardNetworkError,
             onSuccess = { list ->
                 callback.onResult(
                     list.results,
                     0,
                     list.count,
-                    getPageFromURL(list.previous),
-                    getPageFromURL(list.next)
+                    list.previous,
+                    list.next
                 )
             }
         )
@@ -76,44 +81,30 @@ class SwApiPersonListDataSource(
 
     @SuppressLint("CheckResult")
     override fun loadBefore(
-        params: LoadParams<Int>,
-        callback: LoadCallback<Int, Person>
+        params: LoadParams<String?>,
+        callback: LoadCallback<String?, Person>
     ) {
         querier(params.key).subscribeBy(
             onError = this::forwardNetworkError,
             onSuccess = { list ->
-                callback.onResult(list.results, getPageFromURL(list.previous))
+                callback.onResult(list.results, list.previous)
             }
         )
     }
 
     @SuppressLint("CheckResult")
     override fun loadAfter(
-        params: LoadParams<Int>,
-        callback: LoadCallback<Int, Person>
+        params: LoadParams<String?>,
+        callback: LoadCallback<String?, Person>
     ) {
         querier(params.key).subscribeBy(
             onError = this::forwardNetworkError,
             onSuccess = { list ->
-                callback.onResult(list.results, getPageFromURL(list.next))
+                callback.onResult(list.results, list.next)
             }
         )
     }
 
     private fun forwardNetworkError(e: Throwable) = NetworkErrorChannel.get().onNext(e)
-
-    private fun getPageFromURL(urlString: String?): Int? {
-        if(urlString == null) return null
-        val pageParameter = try {
-            URL(urlString).query
-                .split('&')
-                .map { it.split('=') }
-                .filter { it[0] == "page" }
-        } catch(e: MalformedURLException) {
-            return null
-        }
-        val pageStr = pageParameter.getOrNull(0)?.get(1)
-        return pageStr?.toIntOrNull()
-    }
 }
 

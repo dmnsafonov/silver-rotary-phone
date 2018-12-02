@@ -18,7 +18,7 @@ data class Person(
 object PeopleRepository {
     private val swapi = SwApi.create()
 
-    fun getPeopleList(searchTerm: String): DataSource.Factory<Int, Person> =
+    fun getPeopleList(searchTerm: String): DataSource.Factory<String?, Person> =
         swapi.getPeopleList(searchTerm)
 
     fun getPeopleHistoryList(): DataSource.Factory<Int, Person> {
