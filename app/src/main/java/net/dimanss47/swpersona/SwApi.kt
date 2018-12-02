@@ -12,19 +12,19 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 import retrofit2.http.Url
 
-data class PersonList(
+data class SwApiList<E>(
     val count: Int,
     val next: String?,
     val previous: String?,
-    val results: ArrayList<Person>
+    val results: ArrayList<E>
 )
 
 interface SwApi {
     @GET("people/")
-    fun getPeopleListRaw(@Query("search") searchTerm: String): Single<PersonList>
+    fun getPeopleListRaw(@Query("search") searchTerm: String): Single<SwApiList<Person>>
 
     @GET
-    fun getPeopleListPage(@Url pageUrl: String): Single<PersonList>
+    fun getPeopleListPage(@Url pageUrl: String): Single<SwApiList<Person>>
 
     @GET("people/{id}")
     fun getPerson(@Path("id") id: Int): Single<PersonDetails>
@@ -42,7 +42,7 @@ interface SwApi {
 }
 
 fun SwApi.getPeopleList(searchTerm: String): DataSource.Factory<String?, Person> =
-    SwApiPersonListDataSourceFactory { page ->
+    SwApiListDataSourceFactory { page ->
         if(page == null) {
             getPeopleListRaw(searchTerm)
         } else {
@@ -50,24 +50,24 @@ fun SwApi.getPeopleList(searchTerm: String): DataSource.Factory<String?, Person>
         }
     }
 
-class SwApiPersonListDataSourceFactory(
-    private val querier: (page: String?) -> Single<PersonList>
-) : DataSource.Factory<String?, Person>() {
-    override fun create(): DataSource<String?, Person> =
-        SwApiPersonListDataSource(querier)
+class SwApiListDataSourceFactory<E>(
+    private val querier: (page: String?) -> Single<SwApiList<E>>
+) : DataSource.Factory<String?, E>() {
+    override fun create(): DataSource<String?, E> =
+        SwApiListDataSource<E>(querier)
 }
 
-class SwApiPersonListDataSource(
-    private val querier: (page: String?) -> Single<PersonList>
-) : PageKeyedDataSource<String?, Person>() {
+class SwApiListDataSource<E>(
+    private val querier: (page: String?) -> Single<SwApiList<E>>
+) : PageKeyedDataSource<String?, E>() {
     @SuppressLint("CheckResult")
     override fun loadInitial(
         params: LoadInitialParams<String?>,
-        callback: LoadInitialCallback<String?, Person>
+        callback: LoadInitialCallback<String?, E>
     ) {
         querier(null).subscribeBy(
             onError = this::forwardNetworkError,
-            onSuccess = { list ->
+            onSuccess = { list: SwApiList<E> ->
                 callback.onResult(
                     list.results,
                     0,
@@ -82,11 +82,11 @@ class SwApiPersonListDataSource(
     @SuppressLint("CheckResult")
     override fun loadBefore(
         params: LoadParams<String?>,
-        callback: LoadCallback<String?, Person>
+        callback: LoadCallback<String?, E>
     ) {
         querier(params.key).subscribeBy(
             onError = this::forwardNetworkError,
-            onSuccess = { list ->
+            onSuccess = { list: SwApiList<E> ->
                 callback.onResult(list.results, list.previous)
             }
         )
@@ -95,11 +95,11 @@ class SwApiPersonListDataSource(
     @SuppressLint("CheckResult")
     override fun loadAfter(
         params: LoadParams<String?>,
-        callback: LoadCallback<String?, Person>
+        callback: LoadCallback<String?, E>
     ) {
         querier(params.key).subscribeBy(
             onError = this::forwardNetworkError,
-            onSuccess = { list ->
+            onSuccess = { list: SwApiList<E> ->
                 callback.onResult(list.results, list.next)
             }
         )
