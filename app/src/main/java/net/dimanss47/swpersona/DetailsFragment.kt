@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
@@ -195,7 +196,7 @@ class DetailsFragment : Fragment() {
     }
 }
 
-class DetailsViewModel(app: Application) : AndroidViewModel(app) {
+class DetailsViewModel : ViewModel() {
     var url: String? = null
         set(value) {
             val changed = field != value
