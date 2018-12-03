@@ -1,6 +1,5 @@
 package net.dimanss47.swpersona
 
-import android.app.Application
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -9,8 +8,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModel
 import androidx.paging.PagedList
 import androidx.paging.PagedListAdapter
 import androidx.paging.RxPagedListBuilder
@@ -65,6 +63,13 @@ class SearchFragment : Fragment() {
     override fun onStart() {
         super.onStart()
 
+        if(networkErrorSubscription == null) {
+            networkErrorSubscription = NetworkErrorChannel.get().subscribe { error ->
+                viewModel.onNetworkError(error)
+                makeErrorSnackbar()
+            }
+        }
+
         activity!!.searchView.value.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextChange(newText: String): Boolean {
                 viewModel.personNameFilter = newText
@@ -73,13 +78,6 @@ class SearchFragment : Fragment() {
 
             override fun onQueryTextSubmit(query: String): Boolean = true
         })
-
-        if(networkErrorSubscription == null) {
-            networkErrorSubscription = NetworkErrorChannel.get().subscribe { error ->
-                viewModel.onNetworkError(error)
-                makeErrorSnackbar()
-            }
-        }
 
         if(viewModel.isInErrorState) makeErrorSnackbar()
     }
@@ -91,14 +89,13 @@ class SearchFragment : Fragment() {
 
         snackbar?.dismiss()
         snackbar = null
+
+        networkErrorSubscription?.dispose()
+        networkErrorSubscription = null
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-
-        networkErrorSubscription?.dispose()
-        networkErrorSubscription = null
-
         searchAdapterSubscription.dispose()
     }
 
@@ -122,6 +119,11 @@ class SearchFragment : Fragment() {
                 holder.setInProgress()
             } else {
                 holder.bindModel(item)
+
+                // TODO: ripple, "selected" color
+                holder.itemView.setOnClickListener {
+                    if(holder.url != null) activity!!.openDetails(holder.url!!)
+                }
             }
         }
     }
@@ -130,11 +132,14 @@ class SearchFragment : Fragment() {
         val name: TextView = view.findViewById(R.id.name)
         val birthYear: TextView = view.findViewById(R.id.birth_year)
         val gender: TextView = view.findViewById(R.id.gender)
+        var url: String? = null
 
         fun bindModel(person: Person) {
             name.text = person.name
             birthYear.text = person.birthYear
             gender.text = person.gender
+            url = person.url
+
         }
 
         fun setInProgress() {
@@ -142,6 +147,7 @@ class SearchFragment : Fragment() {
             name.text = ""
             birthYear.text = ""
             gender.text = ""
+            url = ""
         }
     }
 
@@ -154,7 +160,7 @@ class SearchFragment : Fragment() {
     }
 }
 
-class SearchViewModel(app: Application) : AndroidViewModel(app) {
+class SearchViewModel : ViewModel() {
     var personNameFilter: String = ""
         set(value) {
             field = value
@@ -179,7 +185,7 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun makePersonListSubscription(): Disposable = personListRaw.subscribeWith(
         object : DisposableObserver<PagedList<Person>>() {
-            override fun onComplete() = personListImpl.onComplete()
+            override fun onComplete() {}
             override fun onError(e: Throwable) = personListImpl.onError(e)
             override fun onNext(t: PagedList<Person>) = personListImpl.onNext(t)
         }
@@ -189,6 +195,7 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
         private set
 
     fun onNetworkError(e: Throwable) {
+        // TODO: different messages, network availability detection
         isInErrorState = true
     }
 
@@ -202,7 +209,7 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
 
         fun of(activity: FragmentActivity): SearchViewModel =
             androidx.lifecycle.ViewModelProviders
-                .of(activity, ViewModelProvider.AndroidViewModelFactory(activity.application))
+                .of(activity)
                 .get(SearchViewModel::class.java)
     }
 }

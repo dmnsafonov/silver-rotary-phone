@@ -1,12 +1,24 @@
 package net.dimanss47.swpersona
 
 import androidx.paging.DataSource
-import com.google.gson.JsonElement
 import com.google.gson.annotations.SerializedName
 import io.reactivex.Observable
+import java.util.*
 
 
-typealias PersonDetails = Map<String, JsonElement>
+class OrderedPersonDetails(
+    private val details: SortedMap<String, PersonalDetail>
+) : SortedMap<String, PersonalDetail> by details {
+    fun copy() = OrderedPersonDetails(TreeMap(details))
+}
+
+data class ExternalPersonalDetail(
+    @SerializedName("name") val nameField: String?,
+    val title: String?
+) {
+    val name: String?
+        get() = nameField ?: title ?: ""
+}
 
 data class Person(
     val name: String,
@@ -25,7 +37,6 @@ object PeopleRepository {
         TODO()
     }
 
-    fun getPerson(url: String): Observable<PersonDetails> {
-        TODO()
-    }
+    fun getPerson(url: String): Observable<OrderedPersonDetails> =
+        swapi.getPerson(url)
 }

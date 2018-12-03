@@ -33,8 +33,13 @@
         android:layout_width="@dimen/landscape_splitter_bar_width"
         android:layout_height="match_parent"
         android:background="#bbbbbb"/>
-    <fragment android:name="net.dimanss47.swpersona.DetailsFragment"
+<!--    <fragment android:name="net.dimanss47.swpersona.DetailsFragment"
         android:id="@+id/right_pane"
+        android:tag="@string/details_fragment_tag"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:layout="@layout/fragment_details"/> -->
+    <FrameLayout android:id="@+id/right_pane"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         tools:layout="@layout/fragment_details"/>
