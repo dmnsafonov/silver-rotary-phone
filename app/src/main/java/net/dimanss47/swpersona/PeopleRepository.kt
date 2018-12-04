@@ -1,7 +1,10 @@
 package net.dimanss47.swpersona
 
 import android.content.Context
+import android.view.View
+import android.widget.TextView
 import androidx.paging.DataSource
+import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
 import com.google.gson.annotations.SerializedName
 import io.reactivex.Observable
@@ -23,12 +26,19 @@ data class ExternalPersonalDetail(
         get() = nameField ?: title ?: ""
 }
 
+abstract class AbstractPerson {
+    abstract val name: String
+    abstract val gender: String
+    abstract val birthYear: String
+    abstract val url: String
+}
+
 data class Person(
-    val name: String,
-    val gender: String,
-    @SerializedName("birth_year") val birthYear: String,
-    val url: String
-)
+    override val name: String,
+    override val gender: String,
+    @SerializedName("birth_year") override val birthYear: String,
+    override val url: String
+) : AbstractPerson()
 
 object PeopleRepository {
     private val swapi = SwApi.create()
@@ -60,6 +70,29 @@ object PeopleRepository {
 
     fun getPerson(url: String): Observable<OrderedPersonDetails> =
         swapi.getPerson(url)
+}
+
+class PersonListViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    val name: TextView = view.findViewById(R.id.name)
+    val birthYear: TextView = view.findViewById(R.id.birth_year)
+    val gender: TextView = view.findViewById(R.id.gender)
+    var url: String? = null
+
+    fun bindModel(person: AbstractPerson) {
+        name.text = person.name
+        birthYear.text = person.birthYear
+        gender.text = person.gender
+        url = person.url
+
+    }
+
+    fun setInProgress() {
+        // TODO: better
+        name.text = ""
+        birthYear.text = ""
+        gender.text = ""
+        url = ""
+    }
 }
 
 class HistoryNotInitializedError : Throwable("call PeopleRepository.init(context)")

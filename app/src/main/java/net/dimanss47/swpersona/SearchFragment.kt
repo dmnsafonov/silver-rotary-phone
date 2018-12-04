@@ -5,7 +5,6 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
@@ -14,7 +13,6 @@ import androidx.paging.PagedListAdapter
 import androidx.paging.RxPagedListBuilder
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import io.reactivex.Observable
 import io.reactivex.disposables.Disposable
@@ -109,11 +107,11 @@ class SearchFragment : Fragment() {
         snackbar = sb
     }
 
-    private inner class SearchListAdapter : PagedListAdapter<Person, SearchListViewHolder>(SearchListDiffCallbacks) {
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SearchListViewHolder =
-            SearchListViewHolder(layoutInflater.inflate(R.layout.person_list_item, parent, false))
+    private inner class SearchListAdapter : PagedListAdapter<Person, PersonListViewHolder>(SearchListDiffCallbacks) {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PersonListViewHolder =
+            PersonListViewHolder(layoutInflater.inflate(R.layout.person_list_item, parent, false))
 
-        override fun onBindViewHolder(holder: SearchListViewHolder, position: Int) {
+        override fun onBindViewHolder(holder: PersonListViewHolder, position: Int) {
             val item = getItem(position)
             if (item == null) {
                 holder.setInProgress()
@@ -125,29 +123,6 @@ class SearchFragment : Fragment() {
                     if(holder.url != null) activity!!.openDetails(holder.url!!)
                 }
             }
-        }
-    }
-
-    private class SearchListViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val name: TextView = view.findViewById(R.id.name)
-        val birthYear: TextView = view.findViewById(R.id.birth_year)
-        val gender: TextView = view.findViewById(R.id.gender)
-        var url: String? = null
-
-        fun bindModel(person: Person) {
-            name.text = person.name
-            birthYear.text = person.birthYear
-            gender.text = person.gender
-            url = person.url
-
-        }
-
-        fun setInProgress() {
-            // TODO: better
-            name.text = ""
-            birthYear.text = ""
-            gender.text = ""
-            url = ""
         }
     }
 

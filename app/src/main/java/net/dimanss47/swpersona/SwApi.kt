@@ -67,6 +67,8 @@ fun SwApi.getPeopleList(searchTerm: String): DataSource.Factory<String?, Person>
 @SuppressLint("CheckResult")
 fun SwApi.getPerson(personUrl: String): Observable<OrderedPersonDetails> {
     val ret = BehaviorSubject.create<OrderedPersonDetails>()
+
+    ret.onNext(OrderedPersonDetails(TreeMap()))
     getPersonRaw(personUrl).observeOn(Schedulers.computation()).subscribeBy(
         onError = {
             ret.onComplete()
@@ -102,6 +104,7 @@ fun SwApi.getPerson(personUrl: String): Observable<OrderedPersonDetails> {
             )
         }
     )
+
     return ret
 }
 
@@ -180,7 +183,7 @@ class PersonDetailsRaw(
 
                 return@associateTo Pair(
                     name,
-                    PersonalDetail.string(value.toString())
+                    PersonalDetail.string(value.asString)
                 )
             }
 
@@ -218,12 +221,6 @@ class PersonalDetail private constructor(
     fun getString() = mString!!
     fun getUrls() = mContents!!.filter { (_, isContents) -> !isContents }
     fun getContents() = mContents!!
-
-    fun copy(): PersonalDetail {
-        if(mString != null) return PersonalDetail(mString = mString)
-
-        return PersonalDetail(mContents = Collections.synchronizedList(ArrayList(mContents!!)))
-    }
 
     companion object {
         fun string(str: String) = PersonalDetail(mString = str)

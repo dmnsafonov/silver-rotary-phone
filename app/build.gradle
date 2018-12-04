@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
 
 android {
     compileSdkVersion 28
@@ -27,6 +28,12 @@ android {
     }
 }
 
+kapt {
+    arguments {
+        arg("room.schemaLocation", "$projectDir/schemas".toString())
+    }
+}
+
 dependencies {
     def room_version = '2.1.0-alpha02'
     def retrofit_version = '2.5.0'
@@ -47,6 +54,7 @@ dependencies {
     implementation "androidx.paging:paging-rxjava2-ktx:$paging_version"
     implementation 'androidx.recyclerview:recyclerview:1.0.0'
     implementation "androidx.room:room-runtime:$room_version"
+    implementation "androidx.room:room-rxjava2:$room_version"
     implementation 'com.google.android.material:material:1.0.0'
     implementation "com.squareup.retrofit2:retrofit:$retrofit_version"
     implementation "com.squareup.retrofit2:converter-gson:$retrofit_version"

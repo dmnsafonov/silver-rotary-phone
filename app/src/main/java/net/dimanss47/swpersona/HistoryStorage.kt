@@ -6,24 +6,24 @@ import androidx.room.*
 import io.reactivex.Single
 import java.util.*
 
-@Database(version = 1, entities = [ History::class ])
+@Database(version = 1, entities = [ HistoryItem::class ])
+@TypeConverters(HistoryConverters::class)
 abstract class HistoryDb : RoomDatabase() {
     abstract fun history(): History
 }
 
 @Entity(indices = [Index(value = ["url"], unique = true)])
 data class HistoryItem(
-    val name: String,
-    val birthYear: String,
-    val gender: String,
-    @PrimaryKey(autoGenerate = true)
-    val url: String,
+    override val name: String,
+    override val birthYear: String,
+    override val gender: String,
+    @PrimaryKey override val url: String,
 
-    // json
-    val other: String,
+    // json: ["key": "value"] representation of OrderedPersonalDetails
+    val fullSerialized: String,
 
     var created_at: Date = Date()
-)
+) : AbstractPerson()
 
 @Dao
 interface History {
@@ -38,6 +38,14 @@ interface History {
 
     @Query("SELECT * FROM HistoryItem WHERE url = :url")
     fun getHistoryCacheEntry(url: String): Single<HistoryItem>
+}
+
+class HistoryConverters {
+    @TypeConverter
+    fun fromTimestamp(ts: Long): Date = Date(ts)
+
+    @TypeConverter
+    fun toTimestamp(date: Date): Long = date.time
 }
 
 private const val DB_NAME = "history_cache.db"

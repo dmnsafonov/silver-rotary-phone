@@ -1,6 +1,5 @@
 package net.dimanss47.swpersona
 
-import android.app.Application
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -9,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -51,6 +49,13 @@ class DetailsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         details_view.layoutManager =LinearLayoutManager(activity!!)
+
+        if(!viewModel.isInErrorState) {
+            val urlArg = arguments?.getString(URL_ARGUMENT_KEY)
+            viewModel.url = urlArg
+
+            details_view.adapter = makeAdapter()
+        }
     }
 
     private fun makeAdapter(): DetailsViewAdapter {
@@ -70,15 +75,6 @@ class DetailsFragment : Fragment() {
                 Log.d("DetailsFragment", error.toString())
                 viewModel.onNetworkError(error)
                 makeErrorSnackbar()
-            }
-        }
-
-        if(!viewModel.isInErrorState) {
-            val urlArg = arguments?.getString(URL_ARGUMENT_KEY)
-            viewModel.url = urlArg
-
-            if(details_view.adapter == null) {
-                details_view.adapter = makeAdapter()
             }
         }
 
@@ -149,7 +145,6 @@ class DetailsFragment : Fragment() {
 
     private abstract class DetailsViewViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         abstract fun bindModel(name: String, content: PersonalDetail)
-        abstract fun setInProgress()
     }
 
     private class DetailsViewViewHolderString(view: View) : DetailsViewViewHolder(view) {
@@ -159,11 +154,6 @@ class DetailsFragment : Fragment() {
         override fun bindModel(name: String, content: PersonalDetail) {
             nameText.text = name
             contentText.text = content.getString()
-        }
-
-        override fun setInProgress() {
-            nameText.text = ""
-            contentText.text = ""
         }
     }
 
@@ -179,12 +169,6 @@ class DetailsFragment : Fragment() {
                 .map { (content, _) -> content }
                 .joinToString("\n")
             // TODO: use recyclerview with layout and more data
-        }
-
-        override fun setInProgress() {
-            nameText.text = ""
-//            contentView.adapter = null
-            contentText.text = ""
         }
     }
 
