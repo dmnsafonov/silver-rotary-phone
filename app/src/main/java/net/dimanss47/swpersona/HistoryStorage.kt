@@ -30,8 +30,8 @@ interface History {
     @Insert
     fun insert(item: HistoryItem)
 
-    @Delete
-    fun delete(item: HistoryItem)
+    @Query("DELETE FROM HistoryItem WHERE url = :url")
+    fun delete(url: String)
 
     @Query("SELECT * FROM HistoryItem ORDER BY created_at")
     fun getHistory(): DataSource.Factory<Int, HistoryItem>

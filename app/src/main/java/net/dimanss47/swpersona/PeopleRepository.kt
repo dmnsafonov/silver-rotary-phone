@@ -68,6 +68,11 @@ object PeopleRepository {
         return history!!.getHistoryCacheEntry(url)
     }
 
+    fun removePeopleHistoryEntry(url: String) {
+        if(history == null) throw HistoryNotInitializedError()
+        history!!.delete(url)
+    }
+
     fun getPerson(url: String): Observable<OrderedPersonDetails> =
         swapi.getPerson(url)
 }

@@ -12,16 +12,19 @@ import androidx.paging.PagedList
 import androidx.paging.PagedListAdapter
 import androidx.paging.RxPagedListBuilder
 import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.fragment_history.*
 
 
 class HistoryFragment : Fragment() {
-    lateinit var viewModel: HistoryViewModel
-    var historyListSubscription: Disposable? = null
+    private lateinit var viewModel: HistoryViewModel
+    private var historyListSubscription: Disposable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +47,7 @@ class HistoryFragment : Fragment() {
             layoutManager = LinearLayoutManager(activity!!)
             adapter = newAdapter
         }
+        ItemTouchHelper(ItemTouchCallback(newAdapter)).attachToRecyclerView(history_view)
     }
 
     override fun onDestroyView() {
@@ -73,6 +77,33 @@ class HistoryFragment : Fragment() {
 
         override fun areItemsTheSame(oldItem: HistoryItem, newItem: HistoryItem): Boolean =
             oldItem.url == newItem.url
+    }
+
+    private class ItemTouchCallback(private val adapter: HistoryListAdapter) : ItemTouchHelper.SimpleCallback(
+        0,
+        ItemTouchHelper.START or ItemTouchHelper.END
+    ) {
+        override fun isLongPressDragEnabled(): Boolean = false
+
+        override fun onMove(
+            recyclerView: RecyclerView,
+            viewHolder: RecyclerView.ViewHolder,
+            target: RecyclerView.ViewHolder
+        ): Boolean = throw IllegalStateException("must not be called")
+
+        override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+            val url = (viewHolder as PersonListViewHolder).url
+
+            // prevent deleting not yet loaded items
+            if(url == null) {
+                adapter.notifyItemChanged(viewHolder.adapterPosition)
+                return
+            }
+
+            Schedulers.io().scheduleDirect {
+                PeopleRepository.removePeopleHistoryEntry(url)
+            }
+        }
     }
 }
 
