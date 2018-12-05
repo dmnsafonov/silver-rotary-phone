@@ -1,7 +1,7 @@
 package net.dimanss47.swpersona
 
+import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -25,6 +25,7 @@ class DetailsFragment : Fragment() {
     private lateinit var viewModel: DetailsViewModel
     private var detailsAdapterSubscription: Disposable? = null
     private var networkErrorSubscription: Disposable? = null
+    private var optionsMenuInitializedSubscription: Disposable? = null
     private var snackbar: Snackbar? = null
 
     private val activity: MainActivity?
@@ -33,6 +34,11 @@ class DetailsFragment : Fragment() {
     var personUrl: String?
         get() = viewModel.url
         set(value) { viewModel.url = value }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        (context as MainActivity).onDetailsFragmentAttached(this)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,7 +78,6 @@ class DetailsFragment : Fragment() {
 
         if(networkErrorSubscription == null) {
             networkErrorSubscription = NetworkErrorChannel.get().subscribe { error ->
-                Log.d("DetailsFragment", error.toString())
                 viewModel.onNetworkError(error)
                 makeErrorSnackbar()
             }
@@ -80,7 +85,13 @@ class DetailsFragment : Fragment() {
 
         if(viewModel.isInErrorState) makeErrorSnackbar()
 
-        activity!!.searchViewItem.value.collapseActionView()
+        optionsMenuInitializedSubscription = activity!!.optionsMenuInitialized
+            .subscribeOn(AndroidSchedulers.mainThread()).subscribe {
+                activity!!.searchViewItem.value?.collapseActionView()
+
+                optionsMenuInitializedSubscription?.dispose()
+                optionsMenuInitializedSubscription = null
+            }
     }
 
     override fun onStop() {
@@ -95,8 +106,14 @@ class DetailsFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+
         detailsAdapterSubscription?.dispose()
         details_view.adapter = null
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        activity!!.onDetailsFragmentDetached()
     }
 
     private fun makeErrorSnackbar() {

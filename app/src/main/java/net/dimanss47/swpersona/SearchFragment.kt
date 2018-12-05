@@ -1,10 +1,8 @@
 package net.dimanss47.swpersona
 
 import android.os.Bundle
+import android.view.*
 import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
@@ -13,8 +11,10 @@ import androidx.paging.PagedListAdapter
 import androidx.paging.RxPagedListBuilder
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.observers.DisposableObserver
 import io.reactivex.rxkotlin.subscribeBy
@@ -26,6 +26,7 @@ class SearchFragment : Fragment() {
     private lateinit var viewModel: SearchViewModel
     private lateinit var searchAdapterSubscription: Disposable
     private var networkErrorSubscription: Disposable? = null
+    private var optionsMenuInitializedSubscription: Disposable? = null
     private var snackbar: Snackbar? = null
 
     private val activity: MainActivity?
@@ -56,6 +57,33 @@ class SearchFragment : Fragment() {
             layoutManager = LinearLayoutManager(activity!!)
             adapter = newAdapter
         }
+
+        matches_list.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener() {
+            val gestureDetector = GestureDetector(
+                activity!!.applicationContext,
+                object : GestureDetector.SimpleOnGestureListener() {
+                    override fun onSingleTapUp(e: MotionEvent): Boolean = true
+                }
+            )
+
+            init { gestureDetector.setIsLongpressEnabled(false) }
+
+            override fun onTouchEvent(rv: RecyclerView, e: MotionEvent) {
+                gestureDetector.onTouchEvent(e)
+            }
+
+            // TODO: ripple, "selected" color
+            override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {
+                val childView = matches_list.findChildViewUnder(e.x, e.y)
+                    ?: return false
+                val viewHolder = matches_list.getChildViewHolder(childView)
+                if(!gestureDetector.onTouchEvent(e)) return false
+                val url = (viewHolder as PersonListViewHolder).url
+                    ?: return false
+                activity!!.openDetails(url)
+                return true
+            }
+        })
     }
 
     override fun onStart() {
@@ -68,14 +96,20 @@ class SearchFragment : Fragment() {
             }
         }
 
-        activity!!.searchView.value.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextChange(newText: String): Boolean {
-                viewModel.personNameFilter = newText
-                return true
-            }
+        optionsMenuInitializedSubscription = activity!!.optionsMenuInitialized
+            .subscribeOn(AndroidSchedulers.mainThread()).subscribe {
+                activity!!.searchView.value!!.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+                    override fun onQueryTextChange(newText: String): Boolean {
+                        viewModel.personNameFilter = newText
+                        return true
+                    }
 
-            override fun onQueryTextSubmit(query: String): Boolean = true
-        })
+                    override fun onQueryTextSubmit(query: String): Boolean = true
+                })
+
+                optionsMenuInitializedSubscription?.dispose()
+                optionsMenuInitializedSubscription = null
+            }
 
         if(viewModel.isInErrorState) makeErrorSnackbar()
     }
@@ -83,7 +117,7 @@ class SearchFragment : Fragment() {
     override fun onStop() {
         super.onStop()
 
-        activity!!.searchView.value.setOnQueryTextListener(null)
+        activity!!.searchView.value!!.setOnQueryTextListener(null)
 
         snackbar?.dismiss()
         snackbar = null
@@ -94,6 +128,7 @@ class SearchFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+
         searchAdapterSubscription.dispose()
     }
 
@@ -117,11 +152,6 @@ class SearchFragment : Fragment() {
                 holder.setInProgress()
             } else {
                 holder.bindModel(item)
-
-                // TODO: ripple, "selected" color
-                holder.itemView.setOnClickListener {
-                    if(holder.url != null) activity!!.openDetails(holder.url!!)
-                }
             }
         }
     }
@@ -138,8 +168,9 @@ class SearchFragment : Fragment() {
 class SearchViewModel : ViewModel() {
     var personNameFilter: String = ""
         set(value) {
+            val changed = field != value
             field = value
-            reset()
+            if(changed) reset()
         }
 
     private var personListRaw = makePersonList()

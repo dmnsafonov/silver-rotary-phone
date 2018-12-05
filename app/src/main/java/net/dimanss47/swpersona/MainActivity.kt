@@ -8,90 +8,128 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.transaction
+import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.subjects.BehaviorSubject
 
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
-    companion object {
-        const val HISTORY_FRAGMENT_TAG: String = "history_fragment"
-        const val SEARCH_FRAGMENT_TAG: String = "search_fragment"
-        const val DETAILS_FRAGMENT_TAG: String = "details_fragment"
-    }
-
-    var returnToHistory = true
+    private var detailsFragment: DetailsFragment? = null
+    private var transitionDoNotBack = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        replaceLeftFragment({ HistoryFragment() }, HISTORY_FRAGMENT_TAG)
+        val url = savedInstanceState?.getString(URL_STATE_KEY)
+        if(url == null) {
+            addFragment(R.id.left_pane, ::HistoryFragment)
+        } else {
+            addFragment(R.id.left_pane, ::HistoryFragment, { createDetailsWithUrl(url) })
+        }
+
+        if(orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            addFragment(R.id.right_pane, ::DetailsFragment)
+        }
+    }
+
+    private fun addFragment(id: Int, first: (() -> Fragment)?, vararg getFragment: () -> Fragment) {
+        if(first != null) {
+            supportFragmentManager.transaction {
+                replace(id, first())
+            }
+        }
+        getFragment.forEach {
+            supportFragmentManager.transaction {
+                addToBackStack(null)
+                replace(id, it())
+            }
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
         initSearchWidget()
+        optionsMenuInitializedImpl.onNext(true)
         return true
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+
+        if(detailsFragment != null) {
+            outState.putString(URL_STATE_KEY, detailsFragment!!.personUrl)
+        }
+    }
+
     private fun initSearchWidget() {
-        with(searchView.value) {
+        with(searchView.value!!) {
             isSubmitButtonEnabled = false
             setIconifiedByDefault(false)
         }
 
-        searchViewItem.value.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
+        searchViewItem.value!!.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
             override fun onMenuItemActionExpand(item: MenuItem): Boolean {
-                replaceLeftFragment(::SearchFragment, SEARCH_FRAGMENT_TAG)
+                // TODO: disable when is in search
+                addFragment(R.id.left_pane, null, ::SearchFragment)
                 return true
             }
 
             override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
-                if(returnToHistory) replaceLeftFragment(::HistoryFragment, HISTORY_FRAGMENT_TAG)
+                if(!transitionDoNotBack) supportFragmentManager.popBackStack()
+                transitionDoNotBack = false
                 return true
             }
         })
     }
 
-    private fun replaceLeftFragment(getFragment: () -> Fragment, tag: String) {
-        val fragment = supportFragmentManager.findFragmentByTag(tag) ?: getFragment()
-        supportFragmentManager.transaction {
-            replace(R.id.left_pane, fragment)
-        }
-    }
-
     fun openDetails(url: String) {
         if(orientation == Configuration.ORIENTATION_LANDSCAPE) {
             detailsFragment!!.personUrl = url
-            returnToHistory = true
-        } else {
-            val fragment = detailsFragment ?: DetailsFragment()
-
-            val args = Bundle()
-            args.putString(DetailsFragment.URL_ARGUMENT_KEY, url)
-            fragment.arguments = args
-
-            supportFragmentManager.transaction {
-                replace(R.id.left_pane, fragment, DETAILS_FRAGMENT_TAG)
-            }
-
-            returnToHistory = false
+        } else supportFragmentManager.transaction {
+            transitionDoNotBack = true
+            addFragment(R.id.left_pane, null, { createDetailsWithUrl(url) })
         }
     }
 
-    val searchViewItem
+    private fun createDetailsWithUrl(url: String): Fragment {
+        val fragment = DetailsFragment()
+
+        val args = Bundle()
+        args.putString(DetailsFragment.URL_ARGUMENT_KEY, url)
+        fragment.arguments = args
+
+        return fragment
+    }
+
+    fun onDetailsFragmentAttached(fragment: DetailsFragment) {
+        detailsFragment = fragment
+    }
+
+    fun onDetailsFragmentDetached() {
+        detailsFragment = null
+    }
+
+    val searchViewItem: Lazy<MenuItem?>
         get() = lazy {
             toolbar.menu.findItem(R.id.action_search)
         }
 
-    val searchView
+    val searchView: Lazy<SearchView?>
         get() = lazy {
-            searchViewItem.value.actionView as SearchView
+            searchViewItem.value?.actionView as SearchView?
         }
+
+    private val optionsMenuInitializedImpl: BehaviorSubject<Boolean> = BehaviorSubject.create()
+    val optionsMenuInitialized: Observable<Boolean> =
+        optionsMenuInitializedImpl.observeOn(AndroidSchedulers.mainThread())
 
     val orientation: Int
         get() = resources.configuration.orientation
 
-    val detailsFragment
-        get() = supportFragmentManager.findFragmentByTag(DETAILS_FRAGMENT_TAG) as DetailsFragment?
+    companion object {
+        const val URL_STATE_KEY: String = "details_url"
+    }
 }
