@@ -80,7 +80,7 @@ class SearchFragment : Fragment() {
                 if(!gestureDetector.onTouchEvent(e)) return false
                 val url = (viewHolder as PersonListViewHolder).url
                     ?: return false
-                activity!!.openDetails(url)
+                activity!!.openDetailsFromSearch(url)
                 return true
             }
         })

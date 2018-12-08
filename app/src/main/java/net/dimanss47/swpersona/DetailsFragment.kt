@@ -1,6 +1,5 @@
 package net.dimanss47.swpersona
 
-import android.content.Context
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -35,11 +34,6 @@ class DetailsFragment : Fragment() {
         get() = viewModel.url
         set(value) { viewModel.url = value }
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        (context as MainActivity).onDetailsFragmentAttached(this)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel = DetailsViewModel.of(activity!!)
@@ -54,11 +48,11 @@ class DetailsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        details_view.layoutManager =LinearLayoutManager(activity!!)
+        details_view.layoutManager = LinearLayoutManager(activity!!)
 
         if(!viewModel.isInErrorState) {
             val urlArg = arguments?.getString(URL_ARGUMENT_KEY)
-            viewModel.url = urlArg
+            if(urlArg != null) viewModel.url = urlArg
 
             details_view.adapter = makeAdapter()
         }
@@ -109,11 +103,6 @@ class DetailsFragment : Fragment() {
 
         detailsAdapterSubscription?.dispose()
         details_view.adapter = null
-    }
-
-    override fun onDetach() {
-        super.onDetach()
-        activity!!.onDetailsFragmentDetached()
     }
 
     private fun makeErrorSnackbar() {
@@ -183,8 +172,7 @@ class DetailsFragment : Fragment() {
             nameText.text = name
             contentText.text = content.getContents()
                 .filter { (_, ready) -> ready }
-                .map { (content, _) -> content }
-                .joinToString("\n")
+                .joinToString("\n") { (content, _) -> content }
             // TODO: use recyclerview with layout and more data
         }
     }
