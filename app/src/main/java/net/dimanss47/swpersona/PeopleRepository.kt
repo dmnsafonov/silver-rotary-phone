@@ -99,24 +99,34 @@ object PeopleRepository {
     }
 
     @SuppressLint("CheckResult")
-    fun getPerson(url: String): Observable<OrderedPersonDetails> {
+    fun getPerson(url: String, overrideCache: Boolean = false): Observable<OrderedPersonDetails> {
         if(history == null) throw HistoryNotInitializedError()
 
         val ret: BehaviorSubject<OrderedPersonDetails> = BehaviorSubject.create()
 
-        getHistoryCacheEntry(url).observeOn(Schedulers.io()).subscribeOn(Schedulers.computation())
-            .map { gson.fromJson(it.fullSerialized, OrderedPersonDetails::class.java) }
-            .toObservable()
-            .switchIfEmpty {
-                val sw = swapi.getPerson(url)
-                sw.lastElement().observeOn(Schedulers.io()).subscribeBy { ordered ->
-                    val historyItem = HistoryItem.fromOrderedPersonalDetails(ordered)
-                    history!!.insert(historyItem)
-                }
-                sw.subscribeWith(it)
-            }.subscribeWith(ret)
+        if(overrideCache) {
+            getPersonFromSwapi(url).subscribeWith(ret)
+        } else {
+            getHistoryCacheEntry(url).observeOn(Schedulers.io()).subscribeOn(Schedulers.computation())
+                .map { gson.fromJson(it.fullSerialized, OrderedPersonDetails::class.java) }
+                .toObservable()
+                .switchIfEmpty {
+                    val sw = getPersonFromSwapi(url)
+                    sw.subscribeWith(it)
+                }.subscribeWith(ret)
+        }
 
         return ret
+    }
+
+    @SuppressLint("CheckResult")
+    private fun getPersonFromSwapi(url: String): Observable<OrderedPersonDetails> {
+        val sw = swapi.getPerson(url)
+        sw.lastElement().observeOn(Schedulers.io()).subscribeBy { ordered ->
+            val historyItem = HistoryItem.fromOrderedPersonalDetails(ordered)
+            history!!.insertOrReplace(historyItem)
+        }
+        return sw
     }
 }
 

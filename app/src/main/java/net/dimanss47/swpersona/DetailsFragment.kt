@@ -1,10 +1,8 @@
 package net.dimanss47.swpersona
 
 import android.os.Bundle
+import android.view.*
 import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
@@ -37,6 +35,7 @@ class DetailsFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel = DetailsViewModel.of(activity!!)
+        setHasOptionsMenu(true)
     }
 
     override fun onCreateView(
@@ -44,6 +43,14 @@ class DetailsFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         return inflater.inflate(R.layout.fragment_details, container, false)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.details_menu, menu)
+        menu.findItem(R.id.action_refresh).setOnMenuItemClickListener {
+            viewModel.forceUpdate()
+            true
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -202,15 +209,16 @@ class DetailsViewModel : ViewModel() {
 
     val details: Observable<OrderedPersonDetails> = detailsImpl
 
-    private fun reset() {
+    private fun reset(overrideCache: Boolean = false) {
         subscription?.dispose()
         if(url != null) {
-            detailsRaw = makeDetails()
+            detailsRaw = makeDetails(overrideCache)
             subscription = makeSubscription()
         }
     }
 
-    private fun makeDetails(): Observable<OrderedPersonDetails> = PeopleRepository.getPerson(url!!)
+    private fun makeDetails(overrideCache: Boolean = false): Observable<OrderedPersonDetails> =
+        PeopleRepository.getPerson(url!!, overrideCache)
 
     private fun makeSubscription(): Disposable = detailsRaw!!.subscribeWith(
         object : DisposableObserver<OrderedPersonDetails>() {
@@ -231,6 +239,10 @@ class DetailsViewModel : ViewModel() {
     fun onNetworkErrorResolved() {
         isInErrorState = false
         reset()
+    }
+
+    fun forceUpdate() {
+        reset(overrideCache = true)
     }
 
     companion object {

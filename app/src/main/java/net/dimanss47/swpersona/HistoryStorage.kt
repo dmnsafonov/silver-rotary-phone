@@ -38,8 +38,8 @@ data class HistoryItem(
 
 @Dao
 interface History {
-    @Insert
-    fun insert(item: HistoryItem)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertOrReplace(item: HistoryItem)
 
     @Query("DELETE FROM HistoryItem WHERE url = :url")
     fun delete(url: String)
