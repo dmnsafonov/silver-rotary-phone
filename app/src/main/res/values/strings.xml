@@ -1,6 +1,5 @@
 <resources>
   <string name="app_name">SwPersona</string>
-  <string name="title_activity_main">MainActivity</string>
   <string name="action_search">Search</string>
   <string name="no_history_label">No history yet</string>
   <string name="no_matches_label">No matches</string>

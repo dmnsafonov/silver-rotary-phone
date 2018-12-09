@@ -88,7 +88,7 @@ class DetailsFragment : Fragment() {
 
         optionsMenuInitializedSubscription = activity!!.optionsMenuInitialized
             .subscribeOn(AndroidSchedulers.mainThread()).subscribe {
-                activity!!.searchViewItem.value?.collapseActionView()
+                activity!!.searchViewItem.value.collapseActionView()
 
                 optionsMenuInitializedSubscription?.dispose()
                 optionsMenuInitializedSubscription = null

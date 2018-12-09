@@ -101,13 +101,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initSearchWidget() {
-        with(searchView.value!!) {
+        with(searchView) {
             isSubmitButtonEnabled = false
             setIconifiedByDefault(false)
         }
 
-        searchViewItem.value!!.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
+        searchViewItem.value.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
             override fun onMenuItemActionExpand(item: MenuItem): Boolean {
+                if(isSearchVisible) return true
+
                 if(isOrientationLandscape) supportFragmentManager.transaction {
                     replace(R.id.left_pane, SearchFragment(), SEARCH_FRAGMENT_LANDSCAPE_TAG)
                 }
@@ -162,15 +164,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    val searchViewItem: Lazy<MenuItem?>
+    val searchViewItem: Lazy<MenuItem>
         get() = lazy {
             toolbar.menu.findItem(R.id.action_search)
         }
 
-    val searchView: Lazy<SearchView?>
-        get() = lazy {
-            searchViewItem.value?.actionView as SearchView?
-        }
+    val searchView: SearchView
+        get() = searchViewItem.value.actionView as SearchView
 
     private val optionsMenuInitializedImpl: BehaviorSubject<Boolean> = BehaviorSubject.create()
     val optionsMenuInitialized: Observable<Boolean> =

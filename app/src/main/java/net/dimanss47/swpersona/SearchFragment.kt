@@ -72,7 +72,7 @@ class SearchFragment : Fragment() {
 
         optionsMenuInitializedSubscription = activity!!.optionsMenuInitialized
             .subscribeOn(AndroidSchedulers.mainThread()).subscribe {
-                activity!!.searchView.value!!.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+                activity!!.searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
                     override fun onQueryTextChange(newText: String): Boolean {
                         viewModel.personNameFilter = newText
                         return true
@@ -80,6 +80,8 @@ class SearchFragment : Fragment() {
 
                     override fun onQueryTextSubmit(query: String): Boolean = true
                 })
+
+                activity!!.searchViewItem.value.expandActionView()
 
                 optionsMenuInitializedSubscription?.dispose()
                 optionsMenuInitializedSubscription = null
@@ -91,7 +93,7 @@ class SearchFragment : Fragment() {
     override fun onStop() {
         super.onStop()
 
-        activity!!.searchView.value!!.setOnQueryTextListener(null)
+        activity!!.searchView.setOnQueryTextListener(null)
 
         snackbar?.dismiss()
         snackbar = null
