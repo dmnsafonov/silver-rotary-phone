@@ -213,6 +213,7 @@ class PersonalDetail private constructor(
         get() = mContents != null
 
     fun getString() = mString!!
+    fun getStringOr(default: String) = mString ?: default
     fun getUrls() = mContents!!.filter { (_, isContents) -> !isContents }
     fun getContents() = mContents!!
 

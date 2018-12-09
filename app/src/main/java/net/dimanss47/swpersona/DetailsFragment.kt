@@ -145,7 +145,7 @@ class DetailsFragment : Fragment() {
 
         fun submit(newDetails: OrderedPersonDetails) {
             details = newDetails.asSequence()
-                .filter { (key, value) -> key != "url" }
+                .filter { (key, _) -> key != "url" }
                 .map { (key, value) -> Pair(key, value) }
                 .toList()
             notifyDataSetChanged()

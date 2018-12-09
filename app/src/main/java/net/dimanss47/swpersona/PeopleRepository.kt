@@ -19,24 +19,10 @@ import java.util.*
 class OrderedPersonDetails(
     private val details: SortedMap<String, PersonalDetail>
 ) : AbstractPerson(), SortedMap<String, PersonalDetail> by details {
-    override val name: String
-    override val gender: String
-    override val birthYear: String
-    override val url: String
-
-    init {
-        val nameVal = details["name"]
-        name = if(nameVal?.isString == true) nameVal.getString() else ""
-
-        val genderVal = details["gender"]
-        gender = if(genderVal?.isString == true) genderVal.getString() else ""
-
-        val birthYearVal = details["birth_year"]
-        birthYear = if(birthYearVal?.isString == true) birthYearVal.getString() else ""
-
-        val urlVal = details["url"]
-        url = if(urlVal?.isString == true) urlVal.getString() else ""
-    }
+    override val name: String = details["name"]?.getStringOr("") ?: ""
+    override val gender: String = details["gender"]?.getStringOr("") ?: ""
+    override val birthYear: String = details["birth_year"]?.getStringOr("") ?: ""
+    override val url: String = details["url"]?.getStringOr("") ?: ""
 
     fun copy() = OrderedPersonDetails(TreeMap(details))
 }

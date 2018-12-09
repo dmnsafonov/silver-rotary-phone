@@ -44,7 +44,7 @@ interface History {
     @Query("DELETE FROM HistoryItem WHERE url = :url")
     fun delete(url: String)
 
-    @Query("SELECT * FROM HistoryItem ORDER BY created_at")
+    @Query("SELECT * FROM HistoryItem ORDER BY created_at DESC")
     fun getHistory(): DataSource.Factory<Int, HistoryItem>
 
     @Query("SELECT * FROM HistoryItem WHERE url = :url")
