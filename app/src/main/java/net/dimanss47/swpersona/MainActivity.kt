@@ -133,7 +133,7 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    fun openDetailsFromSearch(url: String) {
+    fun openDetails(url: String) {
         if(isOrientationLandscape) {
             getDetailsFragment()!!.personUrl = url
         } else supportFragmentManager.transaction {

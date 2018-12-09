@@ -11,7 +11,6 @@ import androidx.paging.PagedListAdapter
 import androidx.paging.RxPagedListBuilder
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -58,32 +57,7 @@ class SearchFragment : Fragment() {
             adapter = newAdapter
         }
 
-        matches_list.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener() {
-            val gestureDetector = GestureDetector(
-                activity!!.applicationContext,
-                object : GestureDetector.SimpleOnGestureListener() {
-                    override fun onSingleTapUp(e: MotionEvent): Boolean = true
-                }
-            )
-
-            init { gestureDetector.setIsLongpressEnabled(false) }
-
-            override fun onTouchEvent(rv: RecyclerView, e: MotionEvent) {
-                gestureDetector.onTouchEvent(e)
-            }
-
-            // TODO: ripple, "selected" color
-            override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {
-                val childView = matches_list.findChildViewUnder(e.x, e.y)
-                    ?: return false
-                val viewHolder = matches_list.getChildViewHolder(childView)
-                if(!gestureDetector.onTouchEvent(e)) return false
-                val url = (viewHolder as PersonListViewHolder).url
-                    ?: return false
-                activity!!.openDetailsFromSearch(url)
-                return true
-            }
-        })
+        matches_list.addOnItemTouchListener(PersonListOnItemTouchListener(activity!!, matches_list))
     }
 
     override fun onStart() {

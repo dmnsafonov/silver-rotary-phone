@@ -119,7 +119,7 @@ object PeopleRepository {
         val ret: BehaviorSubject<OrderedPersonDetails> = BehaviorSubject.create()
 
         getHistoryCacheEntry(url).observeOn(Schedulers.io()).subscribeOn(Schedulers.computation())
-            .map { gson.fromJson(it.fullSerialized, PersonDetailsRaw::class.java).toOrdered() }
+            .map { gson.fromJson(it.fullSerialized, OrderedPersonDetails::class.java) }
             .toObservable()
             .switchIfEmpty {
                 val sw = swapi.getPerson(url)

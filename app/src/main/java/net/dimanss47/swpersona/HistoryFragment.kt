@@ -26,6 +26,9 @@ class HistoryFragment : Fragment() {
     private lateinit var viewModel: HistoryViewModel
     private var historyListSubscription: Disposable? = null
 
+    private val activity: MainActivity?
+        get() = super.getActivity() as? MainActivity
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel = HistoryViewModel.of(activity!!)
@@ -48,6 +51,7 @@ class HistoryFragment : Fragment() {
             adapter = newAdapter
         }
         ItemTouchHelper(ItemTouchCallback(newAdapter)).attachToRecyclerView(history_view)
+        history_view.addOnItemTouchListener(PersonListOnItemTouchListener(activity!!, history_view))
     }
 
     override fun onDestroyView() {
