@@ -3,7 +3,7 @@ package net.dimanss47.swpersona
 import android.content.Context
 import androidx.paging.DataSource
 import androidx.room.*
-import io.reactivex.Single
+import io.reactivex.Maybe
 import java.util.*
 
 @Database(version = 1, entities = [ HistoryItem::class ])
@@ -23,7 +23,18 @@ data class HistoryItem(
     val fullSerialized: String,
 
     var created_at: Date = Date()
-) : AbstractPerson()
+) : AbstractPerson() {
+    companion object {
+        fun fromOrderedPersonalDetails(ordered: OrderedPersonDetails): HistoryItem =
+            HistoryItem(
+                name = ordered.name,
+                birthYear = ordered.birthYear,
+                gender = ordered.gender,
+                url = ordered.url,
+                fullSerialized = gson.toJson(ordered)
+            )
+    }
+}
 
 @Dao
 interface History {
@@ -37,7 +48,7 @@ interface History {
     fun getHistory(): DataSource.Factory<Int, HistoryItem>
 
     @Query("SELECT * FROM HistoryItem WHERE url = :url")
-    fun getHistoryCacheEntry(url: String): Single<HistoryItem>
+    fun getHistoryCacheEntry(url: String): Maybe<HistoryItem>
 }
 
 class HistoryConverters {

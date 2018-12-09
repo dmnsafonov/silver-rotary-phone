@@ -4,9 +4,6 @@ import android.annotation.SuppressLint
 import androidx.paging.DataSource
 import androidx.paging.PageKeyedDataSource
 import com.google.gson.*
-import com.google.gson.reflect.TypeToken
-import com.google.gson.stream.JsonReader
-import com.google.gson.stream.JsonWriter
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -42,9 +39,6 @@ interface SwApi {
 
     companion object {
         fun create(): SwApi {
-            val gson = GsonBuilder()
-                .registerTypeAdapterFactory(PersonDetailsTypeAdapterFactory())
-                .create()
             val retrofit = Retrofit.Builder()
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .addRxOnIoToMainThread()
@@ -170,39 +164,39 @@ class PersonDetailsRaw(
 
     fun toOrdered(): OrderedPersonDetails {
         val ret = TreeMap<String, PersonalDetail>(PersonDetailsEntriesComparator)
-        data.asSequence().filter { (name, value) ->
-            !(value.isJsonNull || name == "url")
-        }.associateTo(ret) { (name, value) ->
-            if(value.isJsonPrimitive) {
-                if(name == "homeworld") {
+        data.asSequence()
+            .filter { (_, value) -> !value.isJsonNull }
+            .associateTo(ret) { (name, value) ->
+                if(value.isJsonPrimitive) {
+                    if(name == "homeworld") {
+                        return@associateTo Pair(
+                            name,
+                            PersonalDetail.contents(mutableListOf(Pair(value.asString, false)))
+                        )
+                    }
+
                     return@associateTo Pair(
                         name,
-                        PersonalDetail.contents(mutableListOf(Pair(value.asString, false)))
+                        PersonalDetail.string(value.asString)
                     )
                 }
 
-                return@associateTo Pair(
-                    name,
-                    PersonalDetail.string(value.asString)
-                )
-            }
+                val objects: Iterable<JsonElement> =
+                    when(value) {
+                        is JsonObject -> listOf(value)
+                        is JsonArray -> value
+                        else -> throw IllegalStateException("unknown json element type")
+                    }
 
-            val objects: Iterable<JsonElement> =
-                when(value) {
-                    is JsonObject -> listOf(value)
-                    is JsonArray -> value
-                    else -> throw IllegalStateException("unknown json element type")
-                }
-
-            val urlList = objects.asSequence().map {
-                if(it !is JsonPrimitive) throw JsonParseError("expected json primitive")
-                if(!it.isString) throw JsonParseError("expected url string")
-                it.asString
+                val urlList = objects.asSequence().map {
+                    if(it !is JsonPrimitive) throw JsonParseError("expected json primitive")
+                    if(!it.isString) throw JsonParseError("expected url string")
+                    it.asString
             }.toMutableList()
 
             return@associateTo Pair(name, PersonalDetail.urls(urlList))
         }
-        ret.remove("url")
+
         return OrderedPersonDetails(ret)
     }
 }
@@ -228,41 +222,6 @@ class PersonalDetail private constructor(
             PersonalDetail(mContents = Collections.synchronizedList(urls.map { Pair(it, false) }))
         fun contents(contents: List<Pair<String, Boolean>>) =
             PersonalDetail(mContents = Collections.synchronizedList(contents))
-    }
-}
-
-object PersonDetailsEntriesComparator : Comparator<String> {
-    private val PRIORITY_LIST = arrayListOf("name", "birth_year", "gender")
-
-    override fun compare(o1: String?, o2: String?): Int {
-        if(o1 == null || o2 == null) {
-            throw IllegalArgumentException("PersonDetailsEntriesComparator does not compare null")
-        }
-
-        val o1i = PRIORITY_LIST.indexOf(o1)
-        val o2i = PRIORITY_LIST.indexOf(o2)
-        if(o1i == -1 && o2i == -1) return o1.compareTo(o2)
-        if(o1i != -1 && o2i != -1) return o1i - o2i
-        return if(o1i != -1) -1 else 1
-    }
-}
-
-class PersonDetailsTypeAdapterFactory : TypeAdapterFactory {
-    override fun <T : Any?> create(gson: Gson, type: TypeToken<T>): TypeAdapter<T>? {
-        if(type.rawType != PersonDetailsRaw::class.java) return null
-
-        return object : TypeAdapter<T>() {
-            override fun read(input: JsonReader): T {
-                val innerTypeToken = object : TypeToken<Map<String, JsonElement>>() {}
-
-                @Suppress("UNCHECKED_CAST")
-                return PersonDetailsRaw(gson.fromJson(input, innerTypeToken.type)!!) as T
-            }
-
-            override fun write(out: JsonWriter, value: T) {
-                throw UnsupportedOperationException()
-            }
-        }
     }
 }
 
