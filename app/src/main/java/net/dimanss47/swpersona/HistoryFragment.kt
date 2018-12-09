@@ -3,9 +3,7 @@ package net.dimanss47.swpersona
 import android.app.Application
 import androidx.fragment.app.Fragment
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.paging.PagedList
@@ -32,6 +30,7 @@ class HistoryFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel = HistoryViewModel.of(activity!!)
+        setHasOptionsMenu(true)
     }
 
     override fun onCreateView(
@@ -39,6 +38,16 @@ class HistoryFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         return inflater.inflate(R.layout.fragment_history, container, false)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.history_menu, menu)
+        menu.findItem(R.id.action_clear_history).setOnMenuItemClickListener {
+            Schedulers.io().scheduleDirect {
+                PeopleRepository.clearPeopleHistory()
+            }
+            true
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

@@ -7,4 +7,5 @@
   <string name="network_error_message">Network error occurred</string>
   <string name="retry_on_network_error_action_label">Retry</string>
   <string name="action_refresh">Refresh</string>
+  <string name="clear_history_action">Clear history</string>
 </resources>

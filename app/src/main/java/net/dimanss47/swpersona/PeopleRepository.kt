@@ -128,6 +128,11 @@ object PeopleRepository {
         }
         return sw
     }
+
+    fun clearPeopleHistory() {
+        if(history == null) throw HistoryNotInitializedError()
+        history!!.clearHistory()
+    }
 }
 
 class PersonListViewHolder(view: View) : RecyclerView.ViewHolder(view) {
