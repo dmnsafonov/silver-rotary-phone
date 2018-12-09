@@ -47,7 +47,7 @@ class SearchFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         val newAdapter = SearchListAdapter()
-        searchAdapterSubscription = viewModel.personList.subscribeBy(
+        searchAdapterSubscription = viewModel.personList.observeOn(AndroidSchedulers.mainThread()).subscribeBy(
             onError = NetworkErrorChannel.get()::onNext,
             onNext = newAdapter::submitList
         )
@@ -74,6 +74,7 @@ class SearchFragment : Fragment() {
             .subscribeOn(AndroidSchedulers.mainThread()).subscribe {
                 activity!!.searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
                     override fun onQueryTextChange(newText: String): Boolean {
+                        no_matches_label.visibility = View.VISIBLE
                         viewModel.personNameFilter = newText
                         return true
                     }
@@ -128,6 +129,14 @@ class SearchFragment : Fragment() {
                 holder.setInProgress()
             } else {
                 holder.bindModel(item)
+
+                // somehow, all other methods say that the adapter is empty
+                if(no_matches_label.visibility == View.VISIBLE) {
+                    no_matches_label.visibility = View.GONE
+
+                    // the only working way to relayout
+                    AndroidSchedulers.mainThread().scheduleDirect(this::notifyDataSetChanged)
+                }
             }
         }
     }

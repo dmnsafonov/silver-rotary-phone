@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="action_search">Поиск</string>
+  <string name="no_history_label">История пуста</string>
+  <string name="no_matches_label">Нет совпадений</string>
+  <string name="network_error_message">Ошибка получения данных из сети</string>
+  <string name="retry_on_network_error_action_label">Повторить</string>
+  <string name="action_refresh">Обновить</string>
+  <string name="clear_history_action">Очистить историю</string>
+</resources>

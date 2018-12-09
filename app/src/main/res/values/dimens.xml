@@ -6,4 +6,5 @@
   <dimen name="search_list_card_content_padding">5dp</dimen>
   <dimen name="landscape_splitter_bar_width">1dp</dimen>
   <dimen name="landscape_splitter_bar_elevation">4dp</dimen>
+  <dimen name="content_margin">7dp</dimen>
 </resources>

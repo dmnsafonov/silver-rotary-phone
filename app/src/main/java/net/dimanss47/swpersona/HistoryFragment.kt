@@ -45,6 +45,9 @@ class HistoryFragment : Fragment() {
         menu.findItem(R.id.action_clear_history).setOnMenuItemClickListener {
             Schedulers.io().scheduleDirect {
                 PeopleRepository.clearPeopleHistory()
+                AndroidSchedulers.mainThread().scheduleDirect {
+                    no_history_label.visibility = View.VISIBLE
+                }
             }
             true
         }
@@ -80,6 +83,14 @@ class HistoryFragment : Fragment() {
                 holder.setInProgress()
             } else {
                 holder.bindModel(item)
+
+                // somehow, all other methods say that the adapter is empty
+                if(no_history_label.visibility == View.VISIBLE) {
+                    no_history_label.visibility = View.GONE
+
+                    // the only working way to relayout
+                    AndroidSchedulers.mainThread().scheduleDirect(this::notifyDataSetChanged)
+                }
             }
         }
     }
@@ -114,6 +125,7 @@ class HistoryFragment : Fragment() {
             }
 
             Schedulers.io().scheduleDirect {
+                // TODO: show no_history label if the list became empty
                 PeopleRepository.removePeopleHistoryEntry(url)
             }
         }

@@ -29,6 +29,7 @@ class PersonListOnItemTouchListener(
         if(!gestureDetector.onTouchEvent(e)) return false
         val url = (viewHolder as PersonListViewHolder).url
             ?: return false
+        if(url.isEmpty()) return false
         activity.openDetails(url)
         return true
     }

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="action_search">検索</string>
+  <string name="network_error_message">ネットワーク・エラー</string>
+  <string name="action_refresh">再読み込む</string>
+  <string name="clear_history_action">履歴を削除</string>
+  <string name="retry_on_network_error_action_label">再試行</string>
+  <string name="no_matches_label">何も見つかりませんでした</string>
+  <string name="no_history_label">閲覧履歴がありません</string>
+</resources>
