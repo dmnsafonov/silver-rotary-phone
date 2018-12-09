@@ -1,6 +1,7 @@
 package net.dimanss47.swpersona
 
 import android.annotation.SuppressLint
+import android.os.Build
 import androidx.paging.DataSource
 import androidx.paging.PageKeyedDataSource
 import com.google.gson.*
@@ -10,12 +11,21 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.BehaviorSubject
+import okhttp3.CipherSuite
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
 import retrofit2.http.Url
 import java.util.*
+import okhttp3.TlsVersion
+import okhttp3.ConnectionSpec
+import java.security.KeyStore
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
+
 
 data class SwApiList<E>(
     val count: Int,
@@ -39,9 +49,42 @@ interface SwApi {
 
     companion object {
         fun create(): SwApi {
+            val okhttp = if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+                val sc = if(Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+                    SSLContext.getInstance("TLS")
+                } else {
+                    SSLContext.getInstance("TLSv1.2")
+                }
+
+                sc.init(null, null, null)
+                val cs = ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+                    .tlsVersions(TlsVersion.TLS_1_2, TlsVersion.TLS_1_1, TlsVersion.TLS_1_0)
+                    .cipherSuites(CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA)
+                    .build()
+
+                val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+                trustManagerFactory.init(KeyStore.getInstance("AndroidCAStore"))
+                var tm: X509TrustManager? = null
+                for(i in trustManagerFactory.trustManagers) {
+                    if(i is X509TrustManager) {
+                        tm = i
+                        break
+                    }
+                }
+                if(tm == null) throw IllegalStateException("no trust manager found")
+
+                OkHttpClient.Builder()
+                    .sslSocketFactory(TlsSocketFactory(sc.socketFactory), tm)
+                    .connectionSpecs(listOf(cs))
+                    .build()
+            } else {
+                OkHttpClient()
+            }
+
             val retrofit = Retrofit.Builder()
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .addRxOnIoToMainThread()
+                .client(okhttp)
                 .baseUrl("https://swapi.co/api/")
                 .build()
             return retrofit.create(SwApi::class.java)
@@ -226,6 +269,4 @@ class PersonalDetail private constructor(
     }
 }
 
-private fun forwardNetworkError(e: Throwable) {
-    NetworkErrorChannel.get().onNext(e)
-}
+private fun forwardNetworkError(e: Throwable) = NetworkErrorChannel.get().onNext(e)
